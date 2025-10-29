@@ -5,8 +5,7 @@ using UnityEngine.UI;
 
 public class WindowGraph : MonoBehaviour
 {
-    [SerializeField] private Sprite dotSprite;
-
+    // Reference this if you want to be able to swap beteen line and bar graph in the future: https://www.youtube.com/watch?v=oohD8x2xios
     private RectTransform graphContainer;
     private RectTransform labelTemplateX;
     private RectTransform labelTemplateY;
@@ -14,6 +13,7 @@ public class WindowGraph : MonoBehaviour
     private RectTransform dashTemplateY;
 
     private List<GameObject> gameObjectList;
+    public List<int> shownList;
 
     private void Awake()
     {
@@ -26,33 +26,12 @@ public class WindowGraph : MonoBehaviour
 
         gameObjectList = new List<GameObject>();
 
-        List<int> valueList = new List<int>() { 5, 98, 56, 45, 30, 22, 17, 15, 13, 17, 25, 37, 40, 36, 33};
+        List<int> valueList = new  List<int>() { 5, 98, 56, 45, 30, 22, 17, 15, 13, 17, 25, 37, 40, 36, 33};
+        shownList = valueList; // Make it public to access from other scripts if needed
+
         ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f)); // axis labels set to empty for simplicity for now, _i + 1 to make x axis start from 1 instead of 0 (only visually)
     }
 
-    // Method to create a dot GameObject at a specified anchored position
-    private GameObject CreateDot(Vector2 anchoredPosition)
-    {
-        // Create a new GameObject with an Image component to represent the dot
-        GameObject gameObject = new GameObject("dot", typeof(Image));
-
-        // Set the parent of the GameObject to the graph container
-        gameObject.transform.SetParent(graphContainer, false);
-
-        // Set the sprite of the Image component to the dot sprite
-        gameObject.GetComponent<Image>().sprite = dotSprite;
-
-        // Get the RectTransform of the GameObject
-        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
-
-        // Set the anchored position, size, and anchors of the RectTransform, In this case, size is set to 11x11 and anchors to bottom-left
-        rectTransform.anchoredPosition = anchoredPosition;
-        rectTransform.sizeDelta = new Vector2(11, 11);
-        rectTransform.anchorMin = new Vector2(0, 0);
-        rectTransform.anchorMax = new Vector2(0, 0);
-
-        return gameObject;
-    }
 
     // ShowGraph(list of values to show, x axis labels , y axis labels) (= null to set as optional)
     private void ShowGraph(List<int> valueList, int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
@@ -122,7 +101,6 @@ public class WindowGraph : MonoBehaviour
 
         int xIndex = 0; // Works as i in for loop but only to position visible points (first visible point is at xIndex 0, second at xIndex 1, etc)
 
-        GameObject lastDotGameObject = null;
         for (int i = Mathf.Max(valueList.Count - maxVisibleValueAmount, 0); i < valueList.Count; i++)
         {
             // Calculate the x and y position for each data point, x is spaced by xSize + (for offset), y is scaled based on the maximum value
@@ -132,19 +110,8 @@ public class WindowGraph : MonoBehaviour
             // Updated to account for minimum y value as well, so that the graph can handle negative values too
             float yPosition = (valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
 
-            // Create a dot at the calculated position
-            GameObject dotGameObject = CreateDot(new Vector2(xPosition, yPosition));
-
-            gameObjectList.Add(dotGameObject); // Add the created dot to the list for future reference, if need to clear later for new graph
-
-            // If there is a last dot, create a connection between the last dot and the current dot. (if statement is to skip the first point since there is no last point to connect to)
-            if (lastDotGameObject != null)
-            {
-                GameObject dotConnectionGameObject = CreateDotConnection(lastDotGameObject.GetComponent<RectTransform>().anchoredPosition, dotGameObject.GetComponent<RectTransform>().anchoredPosition);
-                gameObjectList.Add(dotConnectionGameObject); // Add the created connection to the list for future reference
-            }
-            // Update lastDotGameObject to the current dot for the next iteration
-            lastDotGameObject = dotGameObject;
+            GameObject barGameObject = CreateBar(new Vector2(xPosition, yPosition), xSize * 0.9f);
+            gameObjectList.Add(barGameObject); // Add the created bar to the list for future reference
 
             // Create X-axis labels
             RectTransform labelX = Instantiate(labelTemplateX);
@@ -187,38 +154,6 @@ public class WindowGraph : MonoBehaviour
         }
     }
 
-    private GameObject CreateDotConnection(Vector2 DotPositionA, Vector2 DotPositionB)
-    {
-        // Create a new GameObject with an Image component to represent the connection between dots
-        GameObject gameObject = new GameObject("dotConnection", typeof(Image));
-
-        //set parent to graph container
-        gameObject.transform.SetParent(graphContainer, false);
-
-        //set colour of the connection line to white, slightly transparent
-        gameObject.GetComponent<Image>().color = new Color(1, 1, 1, 0.5f);
-
-        Vector2 dir = (DotPositionB - DotPositionA).normalized; //direction from A to B
-
-        float distance = Vector2.Distance(DotPositionA, DotPositionB); //distance between A and B 
-
-        //Makes connection between two dots by calculating the direction and distance between them
-        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(0, 0);
-        rectTransform.anchorMax = new Vector2(0, 0);
-
-        //set size of the connection, width is distance between dots, height is 3
-        rectTransform.sizeDelta = new Vector2(distance, 3f);
-
-        //position the connection in the middle of the two dots
-        rectTransform.anchoredPosition = DotPositionA + dir * distance * 0.5f;
-
-        //find rotation angle in degrees, takes dir vector and converts to angle
-        rectTransform.localEulerAngles = new Vector3(0, 0, GetAngleFromVectorFloat(dir));
-
-        return gameObject; // return the created connection GameObject
-    }
-
     public static float GetAngleFromVectorFloat(Vector3 dir)
     {
         dir = dir.normalized;
@@ -226,5 +161,26 @@ public class WindowGraph : MonoBehaviour
         if (n < 0) n += 360;
 
         return n;
+    }
+
+    private GameObject CreateBar(Vector2 graphPosition, float barWidth)
+    {
+        // Create a new GameObject with an Image component to represent the dot
+        GameObject gameObject = new GameObject("bar", typeof(Image));
+
+        // Set the parent of the GameObject to the graph container
+        gameObject.transform.SetParent(graphContainer, false);
+
+        // Get the RectTransform of the GameObject
+        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
+
+        // Set the anchored position, size, and anchors of the RectTransform
+        rectTransform.anchoredPosition = new Vector2(graphPosition.x, 0f); // Set x position, y position is 0 since bar grows upwards from x-axis
+        rectTransform.sizeDelta = new Vector2(barWidth, graphPosition.y); // Set width to barWidth, height to graphPosition.y to represent the value
+        rectTransform.anchorMin = new Vector2(0, 0);
+        rectTransform.anchorMax = new Vector2(0, 0);
+        rectTransform.pivot = new Vector2(0.5f, 0f); // Set pivot to bottom center so bar grows upwards from x-axis
+
+        return gameObject;
     }
 }
