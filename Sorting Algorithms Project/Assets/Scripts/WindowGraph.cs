@@ -1,4 +1,3 @@
-using CodeMonkey.Utils;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -215,8 +214,17 @@ public class WindowGraph : MonoBehaviour
         rectTransform.anchoredPosition = DotPositionA + dir * distance * 0.5f;
 
         //find rotation angle in degrees, takes dir vector and converts to angle
-        rectTransform.localEulerAngles = new Vector3(0, 0, UtilsClass.GetAngleFromVectorFloat(dir));
+        rectTransform.localEulerAngles = new Vector3(0, 0, GetAngleFromVectorFloat(dir));
 
         return gameObject; // return the created connection GameObject
+    }
+
+    public static float GetAngleFromVectorFloat(Vector3 dir)
+    {
+        dir = dir.normalized;
+        float n = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        if (n < 0) n += 360;
+
+        return n;
     }
 }
