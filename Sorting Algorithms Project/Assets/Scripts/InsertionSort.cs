@@ -2,15 +2,16 @@ using UnityEngine;
 
 public class InsertionSort : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void ISort(List<int> valueList)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
+        for (i = 0, i < valueList.count, i++)
+        {
+            if (valueList[i + 1] < valueList[i])
+            {
+                j = i + 1
+                while (valueList[i + 1] < valueList[j)
+                {
+                    
         
     }
 }
