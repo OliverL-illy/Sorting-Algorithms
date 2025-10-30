@@ -8,10 +8,16 @@ public class InsertionSort : MonoBehaviour
         {
             if (valueList[i + 1] < valueList[i])
             {
-                j = i + 1
+                j = i
                 while (valueList[i + 1] < valueList[j)
                 {
-                    
-        
+                    int endPos = j + 1
+                    j--
+                }
+                int value = valueList[i + 1]
+                valueList.RemoveAt(i + 1)
+                valueList.Insert(endPos, value)
+            }
+        }
     }
 }
