@@ -1,16 +1,22 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SelectionSort : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public WindowGraph windowGraph;
+    private List<int> valueList;
 
-    // Update is called once per frame
-    void Update()
+    public void SSort()
     {
+        valueList = windowGraph.valueList;
         
+        for (int i = 0; i < valueList.Count; i++)
+        {
+            if (valueList[i] > valueList[i+1])
+                {
+
+            }
+        }
+        windowGraph.ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f));
     }
 }

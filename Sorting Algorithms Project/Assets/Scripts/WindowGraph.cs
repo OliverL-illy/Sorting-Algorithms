@@ -14,6 +14,8 @@ public class WindowGraph : MonoBehaviour
 
     private List<GameObject> gameObjectList;
     public List<int> shownList;
+    public List<int> valueList = new List<int>();
+    [SerializeField] int maxListNum = 1000;
 
     private void Awake()
     {
@@ -26,16 +28,23 @@ public class WindowGraph : MonoBehaviour
 
         gameObjectList = new List<GameObject>();
 
-        List<int> valueList = new  List<int>() { 5, 98, 56, 45, 30, 22, 17, 15, 13, 17, 25, 37, 40, 36, 33};
-        shownList = valueList; // Make it public to access from other scripts if needed
+        for (int i = 0; i < maxListNum; i++)
+        {
+            valueList.Add(UnityEngine.Random.Range(0, 200)); // Random values between 5 and 100 for testing
+        }
+        Debug.Log("valueList.count = " + valueList.Count);
 
         ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f)); // axis labels set to empty for simplicity for now, _i + 1 to make x axis start from 1 instead of 0 (only visually)
     }
 
 
     // ShowGraph(list of values to show, x axis labels , y axis labels) (= null to set as optional)
-    private void ShowGraph(List<int> valueList, int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
+    public void ShowGraph(List<int> valueList, int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
     {
+        if (maxVisibleValueAmount == -1)
+        {
+            maxVisibleValueAmount = valueList.Count; // Ensure we don't try to show more values than exist
+        }
         //If want to customise x and y axis labels, use this video as reference: https://www.youtube.com/watch?v=3ozu5osNw-I
         //doesnt do anything right now, optional
         if (getAxisLabelX == null)
@@ -105,6 +114,7 @@ public class WindowGraph : MonoBehaviour
         {
             // Calculate the x and y position for each data point, x is spaced by xSize + (for offset), y is scaled based on the maximum value
             float xPosition = xSize + xIndex * xSize;
+
             // yPosition is calculated by normalizing the value to the maximum (we do this to get a value between 0 and 1, a ratio of y-maximum) and then multiplying by the graph height to get the actual position in the graph
             //float yPosition = (valueList[i] / yMaximum) * graphHeight;
             // Updated to account for minimum y value as well, so that the graph can handle negative values too
@@ -129,7 +139,9 @@ public class WindowGraph : MonoBehaviour
             gameObjectList.Add(dashX.gameObject); // Add the created dash to the list for future reference
 
             xIndex++;
+
         }
+
 
         // Create Y-axis labels
         int separatorCount = 10; // Number of separators on the Y-axis

@@ -3,17 +3,26 @@ using UnityEngine;
 
 public class BubbleSort : MonoBehaviour
 {
-    public void BSort(List<int> valueList)
+    public WindowGraph windowGraph;
+    private List<int> valueList;
+    private int passes = -1;
+    public void BSort()
     {
-        for (int i = 0; i < valueList.Count - 1; i++)
+        valueList = windowGraph.valueList;
+        while (passes != 0)
         {
-            int passed = 0;
-            if (valueList[i] > valueList[i + 1])
+            passes = 0;
+            for (int i = 0; i < valueList.Count - 1; i++)
             {
-                pass(valueList, i);
-                passed++;
+                if (valueList[i] > valueList[i + 1])
+                {
+                    pass(valueList, i);
+                    passes++;
+                }
             }
         }
+
+        windowGraph.ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f));
     }
 
     private void pass(List<int> valueList, int i)

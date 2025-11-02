@@ -3,8 +3,12 @@ using UnityEngine;
 
 public class InsertionSort : MonoBehaviour
 {
-    public void ISort(List<int> valueList)
+    public WindowGraph windowGraph;
+    private List<int> valueList;
+    public void ISort()
     {
+        valueList = windowGraph.valueList;
+
         for (int i = 1; i < valueList.Count; i++)
         {
             if (valueList[i] < valueList[i - 1])
@@ -21,5 +25,7 @@ public class InsertionSort : MonoBehaviour
                 valueList.Insert(endPos, value);
             }
         }
+
+        windowGraph.ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f));
     }
 }
