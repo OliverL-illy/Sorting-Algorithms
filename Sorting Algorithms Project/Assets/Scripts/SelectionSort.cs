@@ -13,7 +13,7 @@ public class SelectionSort : MonoBehaviour
         for (int i = 0; i < valueList.Count; i++)
         {
             if (valueList[i] > valueList[i+1])
-                {
+            {
 
             }
         }
