@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class WindowGraph : MonoBehaviour
 {
-    // Reference this if you want to be able to swap beteen line and bar graph in the future: https://www.youtube.com/watch?v=oohD8x2xios
     private RectTransform graphContainer;
     private RectTransform labelTemplateX;
     private RectTransform labelTemplateY;
@@ -13,14 +12,12 @@ public class WindowGraph : MonoBehaviour
     private RectTransform dashTemplateY;
 
     private List<GameObject> gameObjectList;
-    public List<int> shownList;
     public List<int> valueList = new List<int>();
-    [SerializeField] int maxListNum = 1000;
+    [SerializeField] int maxListNum = 1024;
 
     private void Awake()
     {
         graphContainer = transform.Find("Graph Container").GetComponent<RectTransform>();
-
         labelTemplateX = graphContainer.Find("Label Template X").GetComponent<RectTransform>();
         labelTemplateY = graphContainer.Find("Label Template Y").GetComponent<RectTransform>();
         dashTemplateX = graphContainer.Find("Dash Template X").GetComponent<RectTransform>();
@@ -28,171 +25,101 @@ public class WindowGraph : MonoBehaviour
 
         gameObjectList = new List<GameObject>();
 
+        // Fill valueList with random test data
         for (int i = 0; i < maxListNum; i++)
         {
-            valueList.Add(UnityEngine.Random.Range(0, 200)); // Random values between 5 and 100 for testing
+            valueList.Add(UnityEngine.Random.Range(0, 200));
         }
-        Debug.Log("valueList.count = " + valueList.Count);
 
-        ShowGraph(valueList, -1, (int _i) => "" + (_i + 1), (float _f) => "" + Mathf.RoundToInt(_f)); // axis labels set to empty for simplicity for now, _i + 1 to make x axis start from 1 instead of 0 (only visually)
+        ShowGraph(valueList);
     }
 
-
-    // ShowGraph(list of values to show, x axis labels , y axis labels) (= null to set as optional)
-    public void ShowGraph(List<int> valueList, int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
+    public void ShowGraph(List<int> values, int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
     {
-        if (maxVisibleValueAmount == -1)
-        {
-            maxVisibleValueAmount = valueList.Count; // Ensure we don't try to show more values than exist
-        }
-        //If want to customise x and y axis labels, use this video as reference: https://www.youtube.com/watch?v=3ozu5osNw-I
-        //doesnt do anything right now, optional
-        if (getAxisLabelX == null)
-        {
-            getAxisLabelX = delegate (int _i) { return _i.ToString(); };
-        }
-        if (getAxisLabelY == null)
-        {
-            getAxisLabelY = delegate (float _f) { return Mathf.RoundToInt(_f).ToString(); };
-        }
+        if (values == null || values.Count == 0) return;
 
-        if(maxVisibleValueAmount <= 0)
-        {
-            maxVisibleValueAmount = valueList.Count; // Show all values if maxVisibleValueAmount is not set or invalid
-        }
+        if (maxVisibleValueAmount <= 0 || maxVisibleValueAmount > values.Count)
+            maxVisibleValueAmount = values.Count;
 
-        // Clear any existing graph elements
-        foreach (GameObject gameObject in gameObjectList)
-        {
-            Destroy(gameObject);
-        }
+        getAxisLabelX ??= (i => (i + 1).ToString());
+        getAxisLabelY ??= (f => Mathf.RoundToInt(f).ToString());
+
+        // Clear previous bars and labels
+        foreach (var go in gameObjectList) Destroy(go);
         gameObjectList.Clear();
 
-        //height of the graph container (sizeDelta.y gets the height of the RectTransform)
+        float graphWidth = graphContainer.sizeDelta.x;
         float graphHeight = graphContainer.sizeDelta.y;
-        float graphWidth = graphContainer.sizeDelta.x; // width of the graph container
 
-        //maxVisibleValueAmount = Maximum number of data points to display on the graph
-
-        //maximum and minimum y values to scale the graph accordingly
-        float yMaximum = valueList[0];
-        float yMinimum = valueList[0];
-
-        // Find the maximum value in the valueList to scale the y positions accordingly, only considering the last 'maxVisibleValueAmount' values if there are more values than that
-        for (int i = Mathf.Max(valueList.Count - maxVisibleValueAmount, 0); i < valueList.Count; i++)// Mathf.Max to ensure start index is not negative, picks the higher of the two values
+        // Find min/max values
+        float yMax = values[0];
+        float yMin = values[0];
+        for (int i = values.Count - maxVisibleValueAmount; i < values.Count; i++)
         {
-            int value = valueList[i];
-
-            if (value > yMaximum)
-            {
-                yMaximum = value;
-            }
-
-            if (value < yMinimum)
-            {
-                yMinimum = value;
-            }
+            if (values[i] > yMax) yMax = values[i];
+            if (values[i] < yMin) yMin = values[i];
         }
 
-        float yDifference = yMaximum - yMinimum; // Difference between max and min y values
-        if (yDifference <= 0f)
+        float yDiff = yMax - yMin;
+        if (yDiff <= 0f) yDiff = 5f; // prevent divide by zero
+
+        // Optional padding
+        yMax += yDiff * 0.2f;
+        yMin = 0f; // optional: always start from 0
+
+        // Calculate exact bar width
+        float barWidth = (graphWidth / maxVisibleValueAmount);
+
+        for (int i = 0; i < maxVisibleValueAmount; i++)
         {
-            yDifference = 5f; // Prevent division by zero later on if only one point, set a default difference
-        }
+            int valueIndex = values.Count - maxVisibleValueAmount + i;
+            float xPos = i * barWidth + barWidth / 2f; // center of bar
+            float yPos = (values[valueIndex] - yMin) / (yMax - yMin) * graphHeight;
 
-        // Add some padding to the y-axis range for better visualization, 20% of difference between max and min
-        yMaximum = yMaximum + yDifference * 0.2f; 
-        yMinimum = yMinimum - yDifference * 0.2f; 
+            GameObject bar = CreateBar(new Vector2(xPos, yPos), barWidth);
+            gameObjectList.Add(bar);
 
-        yMinimum = 0f; // Optional: Uncomment this line if you want the y-axis to always start at 0
-
-        float xSize = graphWidth/(maxVisibleValueAmount + 1); // Spacing between each data point on the x-axis, calculated based on the graph width and maximum visible values so they always fit within the graph. +1 for slight offset from edge
-
-        int xIndex = 0; // Works as i in for loop but only to position visible points (first visible point is at xIndex 0, second at xIndex 1, etc)
-
-        for (int i = Mathf.Max(valueList.Count - maxVisibleValueAmount, 0); i < valueList.Count; i++)
-        {
-            // Calculate the x and y position for each data point, x is spaced by xSize + (for offset), y is scaled based on the maximum value
-            float xPosition = xSize + xIndex * xSize;
-
-            // yPosition is calculated by normalizing the value to the maximum (we do this to get a value between 0 and 1, a ratio of y-maximum) and then multiplying by the graph height to get the actual position in the graph
-            //float yPosition = (valueList[i] / yMaximum) * graphHeight;
-            // Updated to account for minimum y value as well, so that the graph can handle negative values too
-            float yPosition = (valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
-
-            GameObject barGameObject = CreateBar(new Vector2(xPosition, yPosition), xSize * 0.9f);
-            gameObjectList.Add(barGameObject); // Add the created bar to the list for future reference
-
-            // Create X-axis labels
-            RectTransform labelX = Instantiate(labelTemplateX);
-            labelX.SetParent(graphContainer, false);
-            labelX.gameObject.SetActive(true);
-            labelX.anchoredPosition = new Vector2(xPosition, -20f);
-            labelX.GetComponent<Text>().text = getAxisLabelX(i);
-            gameObjectList.Add(labelX.gameObject); // Add the created label to the list for future reference
-
-            // Create X-axis dashes
+            // Optional: X-axis dash
             RectTransform dashX = Instantiate(dashTemplateX);
             dashX.SetParent(graphContainer, false);
-            dashX.gameObject.SetActive(true);
-            dashX.anchoredPosition = new Vector2(xPosition, -20f);
-            gameObjectList.Add(dashX.gameObject); // Add the created dash to the list for future reference
-
-            xIndex++;
-
+            dashX.anchoredPosition = new Vector2(xPos, -20f);
+            gameObjectList.Add(dashX.gameObject);
         }
 
-
-        // Create Y-axis labels
-        int separatorCount = 10; // Number of separators on the Y-axis
+        // Y-axis labels/dashes
+        int separatorCount = 10;
         for (int i = 0; i <= separatorCount; i++)
         {
+            float normalizedValue = i / (float)separatorCount;
+            float yPos = normalizedValue * graphHeight;
+
             RectTransform labelY = Instantiate(labelTemplateY);
             labelY.SetParent(graphContainer, false);
+            labelY.anchoredPosition = new Vector2(-7f, yPos);
             labelY.gameObject.SetActive(true);
-            // Normalised index (0-1) of i based on seperatorCount. Value of i proportinal to separatorCount
-            float normalizedValue = i * 1f / separatorCount;
-            labelY.anchoredPosition = new Vector2(-7f, normalizedValue * graphHeight);
-            // calculate the actual value for the label based on the normalized value and maximum y value e.g . if normalizedValue is 0.5 (i*1/seperatorCount) and yMaximum is 100, label will be 50
-            labelY.GetComponent<Text>().text = getAxisLabelY(yMinimum + (normalizedValue * (yMaximum - yMinimum))); // Updated to account for minimum y value as well e.g. if yMinimum is -50 and yMaximum is 100, at normalizedValue 0.5 (halfway through y axis), label will be 25
-            gameObjectList.Add(labelY.gameObject); // Add the created label to the list for future reference
+            labelY.GetComponent<Text>().text = getAxisLabelY(yMin + normalizedValue * (yMax - yMin));
+            gameObjectList.Add(labelY.gameObject);
 
-            // Create Y-axis dashes
             RectTransform dashY = Instantiate(dashTemplateY);
             dashY.SetParent(graphContainer, false);
+            dashY.anchoredPosition = new Vector2(-4f, yPos);
             dashY.gameObject.SetActive(true);
-            dashY.anchoredPosition = new Vector2(-4f, normalizedValue * graphHeight);
-            gameObjectList.Add(dashY.gameObject); // Add the created dash to the list for future reference
+            gameObjectList.Add(dashY.gameObject);
         }
-    }
-
-    public static float GetAngleFromVectorFloat(Vector3 dir)
-    {
-        dir = dir.normalized;
-        float n = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        if (n < 0) n += 360;
-
-        return n;
     }
 
     private GameObject CreateBar(Vector2 graphPosition, float barWidth)
     {
-        // Create a new GameObject with an Image component to represent the dot
-        GameObject gameObject = new GameObject("bar", typeof(Image));
+        GameObject go = new GameObject("bar", typeof(Image));
+        go.transform.SetParent(graphContainer, false);
 
-        // Set the parent of the GameObject to the graph container
-        gameObject.transform.SetParent(graphContainer, false);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchoredPosition = new Vector2(graphPosition.x, 0f);
+        rect.sizeDelta = new Vector2(barWidth, graphPosition.y);
+        rect.anchorMin = new Vector2(0, 0);
+        rect.anchorMax = new Vector2(0, 0);
+        rect.pivot = new Vector2(0.5f, 0f);
 
-        // Get the RectTransform of the GameObject
-        RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
-
-        // Set the anchored position, size, and anchors of the RectTransform
-        rectTransform.anchoredPosition = new Vector2(graphPosition.x, 0f); // Set x position, y position is 0 since bar grows upwards from x-axis
-        rectTransform.sizeDelta = new Vector2(barWidth, graphPosition.y); // Set width to barWidth, height to graphPosition.y to represent the value
-        rectTransform.anchorMin = new Vector2(0, 0);
-        rectTransform.anchorMax = new Vector2(0, 0);
-        rectTransform.pivot = new Vector2(0.5f, 0f); // Set pivot to bottom center so bar grows upwards from x-axis
-
-        return gameObject;
+        return go;
     }
 }
