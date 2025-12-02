@@ -6,8 +6,8 @@ public class BubbleSort : MonoBehaviour
     public WindowGraph windowGraph;
     private List<int> valueList;
     private int passes = -1;
-    public void BSort()
-    {
+    public void BSort() 
+    { 
         valueList = windowGraph.valueList;
         while (passes != 0)
         {

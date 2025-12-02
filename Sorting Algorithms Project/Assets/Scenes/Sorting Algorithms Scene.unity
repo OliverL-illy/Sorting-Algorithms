@@ -2261,7 +2261,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 934453574}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1890355447}
+        m_TargetAssemblyTypeName: SelectionSort, Assembly-CSharp
+        m_MethodName: SSort
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &934453574
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4266,7 +4278,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d69ada8e8bbc286469c37de16fdc3a4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  windowGraph: {fileID: 0}
+  windowGraph: {fileID: 1901560181}
 --- !u!4 &1890355448
 Transform:
   m_ObjectHideFlags: 0
